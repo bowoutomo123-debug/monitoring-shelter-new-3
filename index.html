@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Monitoring Shelter Navigasi</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- MQTT -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ==================================================
+         SIDEBAR
+    ================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <img
+                src="poltekbang-surabaya.png"
+                alt="Poltekbang Surabaya"
+                class="logo"
+            >
+
+            <div>
+                <h2>POLTEKBANG</h2>
+                <span>Surabaya</span>
+            </div>
+
+        </div>
+
+
+        <div class="system-status">
+
+            <div class="status-dot"></div>
+
+            <div>
+                <strong>SYSTEM ONLINE</strong>
+                <span id="mqttStatus">
+                    Connecting MQTT...
+                </span>
+            </div>
+
+        </div>
+
+
+        <nav class="menu">
+
+            <button class="menu-btn active"
+                    onclick="showExterior()">
+
+                🏠
+                <span>Exterior Shelter</span>
+
+            </button>
+
+
+            <button class="menu-btn"
+                    onclick="showInterior()">
+
+                🚪
+                <span>Interior Shelter</span>
+
+            </button>
+
+
+            <button class="menu-btn">
+
+                📊
+                <span>Monitoring</span>
+
+            </button>
+
+
+            <button class="menu-btn">
+
+                📋
+                <span>Log Aktivitas</span>
+
+            </button>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="connection">
+
+                <span class="connection-light"></span>
+
+                <div>
+                    <small>ESP32-01</small>
+                    <strong>Sensor Node</strong>
+                </div>
+
+            </div>
+
+
+            <div class="connection">
+
+                <span class="connection-light"></span>
+
+                <div>
+                    <small>ESP32-02</small>
+                    <strong>Alarm Node</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- ==================================================
+         MAIN CONTENT
+    ================================================== -->
+
+    <main class="main">
+
+
+        <!-- HEADER -->
+
+        <header class="topbar">
+
+            <div>
+
+                <div class="page-title">
+                    Monitoring Shelter Navigasi
+                </div>
+
+                <div class="subtitle">
+                    Sistem Monitoring Kondisi Shelter Peralatan Navigasi Bandara
+                </div>
+
+            </div>
+
+
+            <div class="top-info">
+
+                <div class="clock">
+
+                    <span id="currentTime">
+                        --:--:--
+                    </span>
+
+                    <small id="currentDate">
+                        --
+                    </small>
+
+                </div>
+
+
+                <div class="live">
+
+                    <span class="live-dot"></span>
+
+                    LIVE MONITORING
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- ==================================================
+             SENSOR CARDS
+        ================================================== -->
+
+        <section class="sensor-grid">
+
+
+            <!-- TEMPERATURE -->
+
+            <div class="sensor-card">
+
+                <div class="sensor-icon temperature-icon">
+                    🌡️
+                </div>
+
+                <div class="sensor-info">
+
+                    <span class="sensor-name">
+                        SUHU
+                    </span>
+
+                    <strong id="temperature">
+                        -- °C
+                    </strong>
+
+                    <span
+                        id="temperatureStatus"
+                        class="status-label safe">
+                        MENUNGGU DATA
+                    </span>
+
+                </div>
+
+                <div class="progress">
+
+                    <div
+                        id="temperatureBar"
+                        class="progress-fill">
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- HUMIDITY -->
+
+            <div class="sensor-card">
+
+                <div class="sensor-icon humidity-icon">
+                    💧
+                </div>
+
+                <div class="sensor-info">
+
+                    <span class="sensor-name">
+                        KELEMBAPAN
+                    </span>
+
+                    <strong id="humidity">
+                        -- %
+                    </strong>
+
+                    <span
+                        id="humidityStatus"
+                        class="status-label safe">
+                        MENUNGGU DATA
+                    </span>
+
+                </div>
+
+                <div class="progress">
+
+                    <div
+                        id="humidityBar"
+                        class="progress-fill">
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- DOOR -->
+
+            <div class="sensor-card">
+
+                <div class="sensor-icon door-icon">
+                    🚪
+                </div>
+
+                <div class="sensor-info">
+
+                    <span class="sensor-name">
+                        AKSES PINTU
+                    </span>
+
+                    <strong id="doorStatus">
+                        MENUNGGU DATA
+                    </strong>
+
+                    <span class="status-label safe">
+                        MAGNETIC SWITCH
+                    </span>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- WATER -->
+
+            <div class="sensor-card">
+
+                <div class="sensor-icon water-icon">
+                    🌊
+                </div>
+
+                <div class="sensor-info">
+
+                    <span class="sensor-name">
+                        GENANGAN AIR
+                    </span>
+
+                    <strong id="waterStatus">
+                        MENUNGGU DATA
+                    </strong>
+
+                    <span class="status-label safe">
+                        WATER SENSOR
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ==================================================
+             SHELTER VIEW
+        ================================================== -->
+
+        <section class="shelter-section">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="section-tag">
+                        REAL-TIME VISUALIZATION
+                    </span>
+
+                    <h2 id="viewTitle">
+                        EXTERIOR SHELTER
+                    </h2>
+
+                </div>
+
+
+                <div class="view-buttons">
+
+                    <button
+                        class="view-btn active"
+                        onclick="showExterior()">
+
+                        🏠 Exterior
+
+                    </button>
+
+
+                    <button
+                        class="view-btn"
+                        onclick="showInterior()">
+
+                        🚪 Masuk Shelter
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ==================================================
+                 EXTERIOR
+            ================================================== -->
+
+            <div
+                id="exteriorView"
+                class="shelter-view exterior-view">
+
+
+                <div class="sky"></div>
+
+
+                <div class="ground"></div>
+
+
+                <!-- SHELTER -->
+
+                <div class="real-shelter">
+
+
+                    <!-- ROOF -->
+
+                    <div class="roof">
+
+                        <div class="roof-edge"></div>
+
+                    </div>
+
+
+                    <!-- WALL -->
+
+                    <div class="shelter-wall">
+
+
+                        <div class="wall-label">
+
+                            <span>
+                                NAVIGATION EQUIPMENT SHELTER
+                            </span>
+
+                            <small>
+                                POLTEKBANG SURABAYA
+                            </small>
+
+                        </div>
+
+
+                        <!-- AC OUTDOOR -->
+
+                        <div class="ac-outdoor">
+
+                            <div class="ac-fan"></div>
+
+                            <span>
+                                AC
+                            </span>
+
+                        </div>
+
+
+                        <!-- VENTILATION -->
+
+                        <div class="ventilation">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+
+                        <!-- DOOR -->
+
+                        <div
+                            id="door"
+                            class="real-door">
+
+                            <div class="door-panel">
+
+                                <div class="door-window"></div>
+
+                                <div class="door-handle">
+                                    ●
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- DOOR FRAME -->
+
+                        <div class="door-frame"></div>
+
+
+                        <!-- WARNING SIGN -->
+
+                        <div class="warning-sign">
+                            ⚠
+                            <span>
+                                AUTHORIZED PERSONNEL ONLY
+                            </span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DOOR ALERT -->
+
+                <div
+                    id="doorAlert"
+                    class="door-alert">
+
+                    ⚠ PINTU TERBUKA
+
+                </div>
+
+
+                <!-- EXTERIOR SENSOR -->
+
+                <div class="sensor-marker">
+
+                    <div class="sensor-light"></div>
+
+                    <span>
+                        WATER SENSOR
+                    </span>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ==================================================
+                 INTERIOR
+            ================================================== -->
+
+            <div
+                id="interiorView"
+                class="shelter-view interior-view hidden">
+
+
+                <!-- CEILING LIGHT -->
+
+                <div class="ceiling-lights">
+
+                    <div class="ceiling-light"></div>
+                    <div class="ceiling-light"></div>
+                    <div class="ceiling-light"></div>
+
+                </div>
+
+
+
+                <!-- AC -->
+
+                <div class="ac-indoor">
+
+                    <div class="ac-display">
+                        <span>24°C</span>
+                    </div>
+
+                    <div class="ac-vent">
+
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+
+                    </div>
+
+                    <div class="air-flow">
+                        ❄
+                    </div>
+
+                    <span class="ac-label">
+                        AIR CONDITIONER
+                    </span>
+
+                </div>
+
+
+
+                <!-- LEFT NAVIGATION EQUIPMENT -->
+
+                <div class="navigation-rack left-rack">
+
+                    <div class="rack-header">
+
+                        NAVAID EQUIPMENT
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            POWER
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            MONITOR
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led blue"></div>
+
+                        <span>
+                            VHF
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            DME
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            DVOR
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- MAIN DESK -->
+
+                <div class="technical-desk">
+
+                    <div class="monitor">
+
+                        <div class="radar-screen">
+
+                            <div class="radar-circle"></div>
+
+                            <div class="radar-line"></div>
+
+                            <div class="radar-sweep"></div>
+
+                            <div class="radar-point p1"></div>
+                            <div class="radar-point p2"></div>
+                            <div class="radar-point p3"></div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="keyboard"></div>
+
+                    <div class="control-box">
+
+                        <div class="control-light green"></div>
+                        <div class="control-light green"></div>
+                        <div class="control-light blue"></div>
+                        <div class="control-light red"></div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- RIGHT CABINET -->
+
+                <div class="navigation-rack right-rack">
+
+                    <div class="rack-header">
+                        CONTROL SYSTEM
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            SYSTEM
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            COMM
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led blue"></div>
+
+                        <span>
+                            DATA
+                        </span>
+
+                    </div>
+
+
+                    <div class="equipment-unit">
+
+                        <div class="led green"></div>
+
+                        <span>
+                            UPS
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- FLOOR -->
+
+                <div class="floor">
+
+
+                    <!-- WATER -->
+
+                    <div
+                        id="waterVisual"
+                        class="water-visual">
+
+                        <div class="water-ripple"></div>
+
+                        <div class="water-ripple ripple2"></div>
+
+                        <div class="water-ripple ripple3"></div>
+
+                    </div>
+
+
+                    <!-- WATER SENSOR -->
+
+                    <div class="floor-water-sensor">
+
+                        <div class="sensor-led"></div>
+
+                        <span>
+                            WATER SENSOR
+                        </span>
+
+                    </div>
+
+
+                    <!-- FLOOR CABLE -->
+
+                    <div class="floor-cable"></div>
+
+                </div>
+
+
+
+                <!-- INTERIOR DOOR -->
+
+                <div
+                    id="interiorDoor"
+                    class="interior-door">
+
+                    <div class="door-glass"></div>
+
+                    <div class="door-handle">
+                        ●
+                    </div>
+
+                </div>
+
+
+                <!-- INTERIOR LABEL -->
+
+                <div class="interior-label">
+
+                    <strong>
+                        NAVIGATION EQUIPMENT SHELTER
+                    </strong>
+
+                    <span>
+                        TECHNICAL ROOM
+                    </span>
+
+                </div>
+
+
+                <!-- BEACON -->
+
+                <div
+                    id="beacon"
+                    class="beacon">
+
+                    <div class="beacon-light"></div>
+
+                    <span>
+                        ALARM BEACON
+                    </span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ==================================================
+             LOWER MONITORING
+        ================================================== -->
+
+        <section class="lower-grid">
+
+
+            <!-- ALARM -->
+
+            <div
+                id="alarmPanel"
+                class="alarm-card">
+
+                <div class="alarm-icon">
+                    🚨
+                </div>
+
+                <div>
+
+                    <span>
+                        SYSTEM ALARM
+                    </span>
+
+                    <strong id="alarmStatus">
+                        NORMAL
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- STATUS -->
+
+            <div class="equipment-status">
+
+                <div class="status-title">
+                    STATUS PERALATAN
+                </div>
+
+
+                <div class="equipment-status-grid">
+
+                    <div class="equipment-status-item">
+
+                        <span>❄</span>
+
+                        <div>
+                            <small>AC</small>
+                            <strong id="acStatus">
+                                AKTIF
+                            </strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="equipment-status-item">
+
+                        <span>💡</span>
+
+                        <div>
+                            <small>LAMP</small>
+                            <strong id="lampStatus">
+                                ON
+                            </strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="equipment-status-item">
+
+                        <span>📡</span>
+
+                        <div>
+                            <small>NAVAID</small>
+                            <strong>
+                                ONLINE
+                            </strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="equipment-status-item">
+
+                        <span>🔊</span>
+
+                        <div>
+                            <small>BUZZER</small>
+                            <strong id="buzzerStatus">
+                                STANDBY
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- LOG -->
+
+            <div class="log-card">
+
+                <div class="status-title">
+                    LOG AKTIVITAS
+                </div>
+
+                <div
+                    id="activityLog"
+                    class="activity-log">
+
+                    <div class="log-item">
+
+                        <span>
+                            --:--:--
+                        </span>
+
+                        <span>
+                            Menunggu koneksi ESP32...
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ==================================================
+             CHART
+        ================================================== -->
+
+        <section class="chart-card">
+
+            <div class="status-title">
+                RIWAYAT SUHU & KELEMBAPAN
+            </div>
+
+            <canvas
+                id="sensorChart">
+            </canvas>
+
+        </section>
+
+
+
+        <!-- ==================================================
+             FOOTER
+        ================================================== -->
+
+        <footer>
+
+            <span>
+                TA Teknik Navigasi Udara
+            </span>
+
+            <span>
+                Monitoring Shelter Berbasis IoT
+            </span>
+
+            <span>
+                Last Update:
+                <strong id="lastUpdate">
+                    --
+                </strong>
+            </span>
+
+        </footer>
+
+    </main>
+
+</div>
+
+
+<!-- ==================================================
+     SCRIPT
+================================================== -->
+
+<script src="script.js"></script>
+
+</body>
+</html>
